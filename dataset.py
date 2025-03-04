@@ -1,7 +1,5 @@
 import kagglehub
-import pandas as pd
-import os
 
-path = kagglehub.dataset_download("bwandowando/rotten-tomatoes-9800-movie-critic-and-user-reviews")
+path = kagglehub.dataset_download("tmdb/tmdb-movie-metadata")
 
 print("Path to dataset files:", path)
