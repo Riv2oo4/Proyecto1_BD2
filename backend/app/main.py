@@ -9,9 +9,9 @@ CORS(app)  # Habilitar CORS para todas las rutas
 
 # Registrar Blueprints (rutas)
 app.register_blueprint(nodes.bp, url_prefix="/nodes")
-app.register_blueprint(relationships.bp, url_prefix="/relations")
-app.register_blueprint(queries.bp, url_prefix="/queries")
-app.register_blueprint(upload.bp, url_prefix="/upload")
+#app.register_blueprint(relationships.bp, url_prefix="/relations")
+#app.register_blueprint(queries.bp, url_prefix="/queries")
+#app.register_blueprint(upload.bp, url_prefix="/upload")
 
 # Ruta de prueba
 @app.route("/")
