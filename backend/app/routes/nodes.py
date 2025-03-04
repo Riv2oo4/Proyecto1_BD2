@@ -9,16 +9,19 @@ bp = Blueprint("nodes", __name__)
 @bp.route("/", methods=["POST"])
 def create_node():
     data = request.json
-    label = data.get("label")
+    labels = data.get("labels", [])  # Lista de etiquetas
     properties = data.get("properties", {})
-    
-    if not label:
-        return jsonify({"error": "Label is required"}), 400
-    
-    query = f"CREATE (n:{label} $props) RETURN n"
+
+    if not labels or not isinstance(labels, list) or len(labels) < 1:
+        return jsonify({"error": "At least one label is required"}), 400
+
+    label_string = ":".join(labels)
+
+    query = f"CREATE (n:{label_string} $props) RETURN n"
     result = neo4j_conn.run_query(query, {"props": properties})
-    
+
     return jsonify({"message": "Node created", "node": str(result)})
+
 
 # Obtener todos los nodos de un tipo
 @bp.route("/<label>", methods=["GET"])
@@ -70,6 +73,6 @@ def update_node(label, id):
 @bp.route("/<label>/<id>", methods=["DELETE"])
 def delete_node(label, id):
     query = f"MATCH (n:{label}) WHERE ID(n) = $id DETACH DELETE n"
-    neo4j_conn.run_query(query, {"id": int(id)})
+    neo4j_conn.run_query(query, {"id": str(id)})
     
     return jsonify({"message": "Node deleted"})
