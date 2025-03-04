@@ -1,41 +1,44 @@
 from flask import Blueprint, request, jsonify
 from app.database import neo4j_conn
-from app.models.movie import Movie
 
-bp = Blueprint("queries", __name__)
+bp = Blueprint("relationships", __name__)
 
-@bp.route("/movies/popular", methods=["GET"])
-def get_popular_movies():
-    query = "MATCH (m:Movie) RETURN m.title, m.language, m.popularity ORDER BY m.popularity DESC LIMIT 10"
-    result = neo4j_conn.run_query(query)
+@bp.route("/", methods=["POST"])
+def create_relationship():
+    data = request.json
+    node1_label = data.get("node1_label")
+    node1_id = data.get("node1_id")
+    node2_label = data.get("node2_label")
+    node2_id = data.get("node2_id")
+    relationship_type = data.get("relationship_type")
+    properties = data.get("properties", {})
     
-    movies = [Movie(**dict(record["m"]).to_dict()) for record in result]
-    return jsonify(movies)
-
-@bp.route("/movies/genre/<genre>", methods=["GET"])
-def get_movies_by_genre(genre):
-    query = "MATCH (m:Movie)-[:BELONGS_TO]->(g:Genre) WHERE g.name = $genre RETURN m"
-    result = neo4j_conn.run_query(query, {"genre": genre})
+    if not all([node1_label, node1_id, node2_label, node2_id, relationship_type]):
+        return jsonify({"error": "All fields are required"}), 400
     
-    movies = [Movie(**dict(record["m"])).to_dict() for record in result]
-    return jsonify(movies)
-
-@bp.route("/recommendations/<user_id>", methods=["GET"])
-def get_recommendations(user_id):
     query = (
-        "MATCH (u:User)-[:LIKED]->(m:Movie)-[:BELONGS_TO]->(g:Genre)<-[:BELONGS_TO]-(rec:Movie) "
-        "WHERE ID(u) = $user_id AND NOT (u)-[:WATCHED]->(rec) "
-        "RETURN rec"
+        f"MATCH (a:{node1_label}), (b:{node2_label}) "
+        f"WHERE ID(a) = $node1_id AND ID(b) = $node2_id "
+        f"CREATE (a)-[r:{relationship_type} $props]->(b) RETURN r"
     )
-    result = neo4j_conn.run_query(query, {"user_id": int(user_id)})
+    result = neo4j_conn.run_query(query, {"node1_id": int(node1_id), "node2_id": int(node2_id), "props": properties})
     
-    recommendations = [Movie(**dict(record["rec"])).to_dict() for record in result]
-    return jsonify(recommendations)
+    return jsonify({"message": "Relationship created", "relationship": str(result)})
 
-@bp.route("/users/<user_id>/watched", methods=["GET"])
-def get_watched_movies(user_id):
-    query = "MATCH (u:User)-[:WATCHED]->(m:Movie) WHERE ID(u) = $user_id RETURN m"
-    result = neo4j_conn.run_query(query, {"user_id": int(user_id)})
+@bp.route("/<label>/<id>", methods=["GET"])
+def get_relationships(label, id):
+    query = f"MATCH (n:{label})-[r]->(m) WHERE ID(n) = $id RETURN type(r) AS relationship, m"
+    result = neo4j_conn.run_query(query, {"id": int(id)})
     
-    watched_movies = [Movie(**dict(record["m"])).to_dict() for record in result]
-    return jsonify(watched_movies)
+    return jsonify([{ "relationship": record["relationship"], "node": dict(record["m"]) } for record in result])
+
+@bp.route("/<label1>/<id1>/<relationship>/<label2>/<id2>", methods=["DELETE"])
+def delete_relationship(label1, id1, relationship, label2, id2):
+    query = (
+        f"MATCH (a:{label1})-[r:{relationship}]->(b:{label2}) "
+        f"WHERE ID(a) = $id1 AND ID(b) = $id2 "
+        f"DELETE r"
+    )
+    neo4j_conn.run_query(query, {"id1": int(id1), "id2": int(id2)})
+    
+    return jsonify({"message": "Relationship deleted"})
