@@ -7,10 +7,11 @@ bp = Blueprint("queries", __name__)
 # Obtener las películas más populares
 @bp.route("/movies/popular", methods=["GET"])
 def get_popular_movies():
-    query = "MATCH (m:Movie) RETURN m.title, m.language, m.popularity ORDER BY m.popularity DESC LIMIT 10"
+    query = "MATCH (m:Movie) RETURN m ORDER BY m.popularity DESC LIMIT 10"
     result = neo4j_conn.run_query(query)
+
+    movies = [Movie(**dict(record["m"])).to_dict() for record in result]
     
-    movies = [Movie(**dict(record["m"]).to_dict()) for record in result]
     return jsonify(movies)
 
 # Obtener películas por género
