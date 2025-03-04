@@ -1,14 +1,12 @@
-class Movie :
-    def __init__(self, title, year, genre):
+class Movie:
+    def __init__(self, title, language, popularity):
         self.title = title
-        self.year = year
-        self.genre = genre
-    
+        self.language = language
+        self.popularity = popularity
+
     def to_dict(self):
         return {
             "title": self.title,
-            "year": self.year,
-            "genre": self.genre
-            
+            "language": self.language,
+            "popularity": self.popularity
         }
-        
