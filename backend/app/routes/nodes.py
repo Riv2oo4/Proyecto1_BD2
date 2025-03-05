@@ -71,7 +71,7 @@ def update_node(label, id):
 
 # Eliminar un nodo
 @bp.route("/<label>/<id>", methods=["DELETE"])
-def delete_node(label, id):
+def delete_node(label, id): 
     query = f"MATCH (n:{label}) WHERE ID(n) = $id DETACH DELETE n"
     neo4j_conn.run_query(query, {"id": str(id)})
     
